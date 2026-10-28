@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+@import 'konsta/react/theme.css';
+
+/* Keep dark mode controlled by the preview toolbar, not the host OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+
+body { margin: 0; }
+#root { min-height: 100dvh; }
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid #008b94;
+  outline-offset: 3px;
+}
+
+/* Add your app's design tokens and shared styles below. */

@@ -1,0 +1,50 @@
+rules_version = '2';
+
+// review-kit rules. There's no sign-in (the password lives in the page), so these
+// rules are about keeping the data well-formed and scoped, not about secrecy.
+// Everything else in the database stays closed.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function str(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    function filled(v, max) {
+      return str(v, max) && v.size() > 0;
+    }
+
+    match /review_projects/{project}/comments/{id} {
+      allow read: if project.size() <= 100;
+      allow create: if request.resource.data.keys().hasOnly(
+            ['page', 'text', 'author', 'at', 'selector', 'snippet', 'fx', 'fy', 'replyTo', 'resolved', 'resolvedBy'])
+        && filled(request.resource.data.page, 300)
+        && filled(request.resource.data.text, 5000)
+        && filled(request.resource.data.author, 80)
+        && request.resource.data.at == request.time
+        && str(request.resource.data.selector, 2000)
+        && str(request.resource.data.snippet, 400)
+        && request.resource.data.fx is number
+        && request.resource.data.fy is number
+        && str(request.resource.data.replyTo, 64)
+        && request.resource.data.resolved == false
+        && request.resource.data.resolvedBy == '';
+      // Only the resolved state can change after posting
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved', 'resolvedBy'])
+        && request.resource.data.resolved is bool
+        && str(request.resource.data.resolvedBy, 80);
+      allow delete: if true;
+    }
+
+    // Append-only: an edit is never changed, a newer one supersedes it
+    match /review_projects/{project}/edits/{id} {
+      allow read: if project.size() <= 100;
+      allow create: if request.resource.data.keys().hasOnly(['page', 'original', 'text', 'author', 'at'])
+        && filled(request.resource.data.page, 300)
+        && filled(request.resource.data.original, 5000)
+        && filled(request.resource.data.text, 5000)
+        && filled(request.resource.data.author, 80)
+        && request.resource.data.at == request.time;
+    }
+  }
+}
